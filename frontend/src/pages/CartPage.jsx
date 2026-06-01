@@ -179,7 +179,7 @@ export default function CartPage() {
             <Link to="/products" className="btn-primary mt-4 inline-block">Start Shopping</Link>
           </div>
         ) : step === 'cart' ? (
-          <div className="grid md:grid-cols-[1fr_360px] gap-6">
+          <div className="grid gap-6 md:grid-cols-[1fr_360px]">
             <div className="space-y-3">
               {cart.map(item => (
                 <div key={item._id} className="card p-4 flex items-center gap-4">
@@ -207,7 +207,7 @@ export default function CartPage() {
               ))}
             </div>
 
-            <div className="card p-5 h-fit sticky top-28 space-y-4">
+            <div className="card p-5 h-fit md:sticky md:top-28 space-y-4">
               <h2 className="font-semibold text-gray-800">Order Summary</h2>
 
               <div>
@@ -257,7 +257,7 @@ export default function CartPage() {
             </div>
           </div>
         ) : (
-          <div className="grid md:grid-cols-[1fr_360px] gap-6">
+          <div className="grid gap-6 md:grid-cols-[1fr_360px]">
             <div className="space-y-3">
               {cart.map(item => (
                 <div key={item._id} className="card p-4 flex items-center gap-4">

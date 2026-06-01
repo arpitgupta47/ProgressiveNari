@@ -3,12 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    min-height: 100%;
+    scroll-behavior: smooth;
+  }
   * { box-sizing: border-box; }
   body {
     font-family: 'DM Sans', system-ui, sans-serif;
     background: #f0f2f5;
     color: #1a1a2e;
     min-height: 100vh;
+    overflow-x: hidden;
   }
   h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; }
 }

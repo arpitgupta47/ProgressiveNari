@@ -73,7 +73,7 @@ export default function ProductDetail() {
           <span className="text-gray-700">{product.title}</span>
         </div>
 
-        <div className="grid md:grid-cols-[1fr_380px] gap-6">
+        <div className="grid gap-6 md:grid-cols-[1fr_380px]">
           {/* Left */}
           <div className="space-y-4">
             <div className="card p-4">
@@ -105,7 +105,7 @@ export default function ProductDetail() {
 
           {/* Right - Purchase Box */}
           <div className="space-y-4">
-            <div className="card p-5 sticky top-28">
+            <div className="card p-5 md:sticky md:top-28">
               <div className="flex items-baseline gap-2">
                 <span className="font-display text-3xl font-bold text-primary">₹{product.price.toLocaleString()}</span>
                 <span className="text-sm text-muted">+ platform fee ₹10</span>

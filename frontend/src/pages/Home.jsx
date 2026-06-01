@@ -101,8 +101,8 @@ export default function Home() {
             <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-white/5 rounded-full" style={{ animation: 'pulse 3s infinite 1s' }} />
             <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-white/5 rounded-full" style={{ animation: 'pulse 4s infinite 0.5s' }} />
           </div>
-          <div className="relative max-w-7xl mx-auto px-4 py-12 flex items-center justify-between">
-            <div className="flex-1">
+          <div className="relative max-w-7xl mx-auto px-4 py-12 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex-1 max-w-xl">
               <div className="text-5xl mb-3 animate-bounce">{banner.emoji}</div>
               <h1 className="font-display text-3xl md:text-5xl font-bold leading-tight">{t(lang, banner.titleKey)}</h1>
               <p className="mt-3 text-white/80 text-base md:text-lg max-w-lg">{t(lang, banner.subtitleKey)}</p>
