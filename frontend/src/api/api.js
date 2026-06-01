@@ -6,7 +6,7 @@ const apiBaseURL = rawApiUrl
   : '/api'
 
 const api = axios.create({
-  baseURL: apiBaseURL,
+  baseURL: 'https://progressivenari.onrender.com/api',
   timeout: 15000
 })
 
