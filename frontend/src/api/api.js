@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://progressivenaari-api.onrender.com/api',
+  baseURL: 'https://progressivenari-api.onrender.com/api',
   timeout: 15000
 })
 
