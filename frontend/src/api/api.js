@@ -1,18 +1,16 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://progressivenari-api.onrender.com/api',
+  baseURL: 'https://progressivenari.onrender.com/api',
   timeout: 15000
 })
 
-// Attach token automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('pn_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Handle auth errors
 api.interceptors.response.use(
   (res) => res,
   (err) => {
