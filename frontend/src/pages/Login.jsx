@@ -39,7 +39,9 @@ export default function Login() {
       navigate(res.data.user.role === 'seller' ? '/seller/dashboard' : '/customer/dashboard')
     } catch (err) {
       const msg = err.response?.data?.message || 'Google login failed'
-      setError(msg)
+      const endpoint = err.config?.url ? `${err.config.baseURL || ''}${err.config.url}` : '/auth/google'
+      console.error('Google login error:', endpoint, err.response?.status, err.response?.data)
+      setError(`${msg}${err.response?.status === 404 ? ` (endpoint: ${endpoint})` : ''}`)
       if (err.response?.data?.code === 'WOMEN_ONLY') {
         setError(lang === 'hi'
           ? 'प्रोग्रेसिव नारी केवल महिला उद्यमियों के लिए है। कृपया ग्राहक के रूप में लॉगिन करें।'
@@ -80,7 +82,10 @@ export default function Login() {
       showToast(lang === 'hi' ? `स्वागत है, ${res.data.user.name}!` : `Welcome back, ${res.data.user.name}!`, 'success')
       navigate(userRole === 'seller' ? '/seller/dashboard' : '/customer/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || (lang === 'hi' ? 'लॉगिन विफल' : 'Login failed'))
+      const message = err.response?.data?.message || (lang === 'hi' ? 'लॉगिन विफल' : 'Login failed')
+      const endpoint = err.config?.url ? `${err.config.baseURL || ''}${err.config.url}` : '/auth/login'
+      console.error('Login error:', endpoint, err.response?.status, err.response?.data)
+      setError(`${message}${err.response?.status === 404 ? ` (endpoint: ${endpoint})` : ''}`)
     } finally { setLoading(false) }
   }
 
