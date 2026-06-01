@@ -6,6 +6,8 @@ import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import jwt from 'jsonwebtoken'
 import connectDB from './config/db.js'
 import authRoutes from './routes/auth.js'
@@ -16,6 +18,7 @@ import notificationRoutes from './routes/notification.js'
 
 dotenv.config()
 connectDB()
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = express()
 const httpServer = createServer(app)
@@ -103,8 +106,10 @@ app.use('/api/orders', orderRoutes)
 app.use('/api/payment', paymentRoutes)
 app.use('/api/notifications', notificationRoutes)
 
-// Health Route
-app.get('/', (req, res) => {
+const frontendDistPath = path.resolve(__dirname, '../frontend/dist')
+app.use(express.static(frontendDistPath))
+
+app.get('/api', (req, res) => {
   res.json({
     message: 'Progressive Naari API v3.0 ✅',
     platform_fee: `₹${process.env.PLATFORM_FEE || 10}`,
@@ -114,7 +119,13 @@ app.get('/', (req, res) => {
   })
 })
 
-// Error Handler
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next()
+  res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
+    if (err) next(err)
+  })
+})
+
 app.use((err, req, res, next) => {
   console.error(err)
 

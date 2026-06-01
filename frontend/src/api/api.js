@@ -3,10 +3,10 @@ import axios from 'axios'
 const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim()
 const apiBaseURL = rawApiUrl
   ? rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '') + '/api'
-  : '/api'
+  : `${window.location.origin}/api`
 
 const api = axios.create({
-  baseURL: 'https://progressivenari.onrender.com/api',
+  baseURL: apiBaseURL,
   timeout: 15000
 })
 
