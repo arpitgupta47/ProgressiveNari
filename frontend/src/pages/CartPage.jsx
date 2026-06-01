@@ -12,6 +12,12 @@ const DELIVERY_OPTIONS = [
   { value: 'company_delivery', label: 'Company Delivery', charge: 200, desc: 'Pan-India courier', icon: '📦' }
 ]
 
+const PAYMENT_OPTIONS = [
+  { value: 'online', label: 'Online Payment', desc: 'Pay securely with UPI, card, or net banking', icon: '💳' },
+  { value: 'upi', label: 'UPI / QR Pay', desc: 'Pay using Google Pay, PhonePe, Paytm, or UPI apps', icon: '📲' },
+  { value: 'cash', label: 'Cash on Delivery', desc: 'Pay cash when the order is delivered', icon: '💵' }
+]
+
 const PLATFORM_FEE = 10
 
 export default function CartPage() {
@@ -21,64 +27,74 @@ export default function CartPage() {
   const [deliveryType, setDeliveryType] = useState('self_pickup')
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [customerNote, setCustomerNote] = useState('')
+  const [paymentMode, setPaymentMode] = useState('online')
   const [placing, setPlacing] = useState(false)
-  const [step, setStep] = useState('cart') // cart | checkout | success
+  const [step, setStep] = useState('cart') // cart | payment | success
 
   const deliveryCharge = DELIVERY_OPTIONS.find(d => d.value === deliveryType)?.charge || 0
   const total = subtotal + deliveryCharge + PLATFORM_FEE
 
-  const handlePlaceOrder = async () => {
+  const handleProceedToPayment = () => {
     if (!user) { navigate('/login'); return }
     if (cart.length === 0) { showToast('Cart is empty', 'error'); return }
     if ((deliveryType !== 'self_pickup') && !deliveryAddress.trim()) {
       showToast('Please enter delivery address', 'error'); return
     }
+    setStep('payment')
+  }
 
+  const handleConfirmPayment = async () => {
     setPlacing(true)
     try {
       const items = cart.map(item => ({ productId: item._id, quantity: item.quantity }))
       const res = await api.post('/orders', {
-        items, deliveryType, deliveryAddress, customerNote
+        items, deliveryType, deliveryAddress, customerNote, paymentMode
       })
 
       const order = res.data.order
-      showToast('Order placed! Proceeding to payment...', 'success')
+      if (paymentMode === 'online') {
+        try {
+          const payRes = await api.post('/payment/create-order', { orderId: order._id })
+          const { razorpayOrderId, amount, keyId } = payRes.data
 
-      // Create Razorpay payment
-      try {
-        const payRes = await api.post('/payment/create-order', { orderId: order._id })
-        const { razorpayOrderId, amount, keyId } = payRes.data
+          const options = {
+            key: keyId,
+            amount,
+            currency: 'INR',
+            name: 'Progressive Naari',
+            description: 'Order Payment',
+            order_id: razorpayOrderId,
+            handler: async (response) => {
+              try {
+                await api.post('/payment/verify', {
+                  ...response,
+                  orderId: order._id
+                })
+                clearCart()
+                showToast('🎉 Order placed & payment successful!', 'success')
+                setStep('success')
+              } catch {
+                showToast('Payment verification failed. Contact support.', 'error')
+              }
+            },
+            prefill: { name: user.name, email: user.email },
+            theme: { color: '#E63946' }
+          }
 
-        const options = {
-          key: keyId,
-          amount,
-          currency: 'INR',
-          name: 'Progressive Naari',
-          description: 'Order Payment',
-          order_id: razorpayOrderId,
-          handler: async (response) => {
-            try {
-              await api.post('/payment/verify', {
-                ...response,
-                orderId: order._id
-              })
-              clearCart()
-              showToast('🎉 Order placed & payment successful!', 'success')
-              setStep('success')
-            } catch {
-              showToast('Payment verification failed. Contact support.', 'error')
-            }
-          },
-          prefill: { name: user.name, email: user.email },
-          theme: { color: '#E63946' }
+          const rzp = new window.Razorpay(options)
+          rzp.open()
+        } catch (error) {
+          clearCart()
+          showToast('Order placed, but payment gateway is unavailable. Please pay via UPI/Cash later.', 'info')
+          setStep('success')
         }
+      } else {
+        const message = paymentMode === 'cash'
+          ? 'Order placed with Cash on Delivery. Please pay when the order arrives.'
+          : 'Order placed. Please complete the UPI payment using the provided details.'
 
-        const rzp = new window.Razorpay(options)
-        rzp.open()
-      } catch {
-        // Payment gateway not configured - place order without payment
         clearCart()
-        showToast('Order placed! (Payment gateway not configured)', 'info')
+        showToast(message, 'success')
         setStep('success')
       }
     } catch (err) {
@@ -95,7 +111,7 @@ export default function CartPage() {
         <div className="card p-10">
           <div className="text-6xl mb-4">🎉</div>
           <h1 className="font-display text-2xl font-bold text-dark">Order Placed Successfully!</h1>
-          <p className="text-muted mt-2">The seller will review your order and respond shortly. You'll get a notification.</p>
+          <p className="text-muted mt-2">Your order is confirmed. You will receive notifications about delivery and payment updates.</p>
           <div className="mt-6 space-y-2">
             <Link to="/orders" className="block btn-primary w-full text-center">View My Orders</Link>
             <Link to="/products" className="block btn-secondary w-full text-center">Continue Shopping</Link>
@@ -105,9 +121,52 @@ export default function CartPage() {
     </div>
   )
 
+  const PaymentDetails = () => (
+    <div className="card p-5 h-fit sticky top-28 space-y-4">
+      <h2 className="font-semibold text-gray-800">Confirm Payment</h2>
+      <p className="text-sm text-gray-600">Choose a payment method to complete your order.</p>
+
+      <div className="space-y-2">
+        {PAYMENT_OPTIONS.map(opt => (
+          <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${paymentMode === opt.value ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'}`}>
+            <input type="radio" name="paymentMode" value={opt.value} checked={paymentMode === opt.value} onChange={() => setPaymentMode(opt.value)} className="mt-2" />
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                <span>{opt.icon}</span>
+                <span>{opt.label}</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{opt.desc}</p>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      {paymentMode === 'upi' && (
+        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+          <p className="font-semibold mb-2">UPI Payment Instructions</p>
+          <p>Send payment to <span className="font-bold">progressivenaari@upi</span> or scan the UPI QR code provided at checkout.</p>
+          <p className="text-xs text-gray-500 mt-2">Please complete the payment after order placement and share the UPI transaction ID in the notifications section.</p>
+        </div>
+      )}
+
+      <div className="space-y-2 text-sm border-t pt-3">
+        <div className="flex justify-between text-muted"><span>Subtotal ({cart.length} items)</span><span>₹{subtotal.toLocaleString()}</span></div>
+        <div className="flex justify-between text-muted"><span>Delivery</span><span>{deliveryCharge === 0 ? 'FREE' : `₹${deliveryCharge}`}</span></div>
+        <div className="flex justify-between text-muted"><span>Platform Fee</span><span>₹{PLATFORM_FEE}</span></div>
+        <hr className="border-gray-100 my-1" />
+        <div className="flex justify-between font-bold text-base"><span>Total</span><span className="text-primary">₹{total.toLocaleString()}</span></div>
+      </div>
+
+      <button onClick={handleConfirmPayment} disabled={placing}
+        className="w-full py-3 bg-accent hover:bg-yellow-400 text-gray-900 font-bold rounded-xl transition-colors disabled:opacity-50">
+        {placing ? '⏳ Processing...' : paymentMode === 'cash' ? `Pay Cash on Delivery — ₹${total.toLocaleString()}` : paymentMode === 'upi' ? `Confirm UPI Payment — ₹${total.toLocaleString()}` : `Pay Online — ₹${total.toLocaleString()}`}
+      </button>
+      <button onClick={() => setStep('cart')} className="w-full py-3 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50 transition-colors">Back to Cart</button>
+    </div>
+  )
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Load Razorpay */}
       <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
       <Navbar />
       <main className="pt-28 pb-12 max-w-7xl mx-auto px-4">
@@ -119,9 +178,8 @@ export default function CartPage() {
             <p className="text-gray-500 mt-4 text-lg">Your cart is empty</p>
             <Link to="/products" className="btn-primary mt-4 inline-block">Start Shopping</Link>
           </div>
-        ) : (
+        ) : step === 'cart' ? (
           <div className="grid md:grid-cols-[1fr_360px] gap-6">
-            {/* Cart items */}
             <div className="space-y-3">
               {cart.map(item => (
                 <div key={item._id} className="card p-4 flex items-center gap-4">
@@ -149,11 +207,9 @@ export default function CartPage() {
               ))}
             </div>
 
-            {/* Order Summary */}
             <div className="card p-5 h-fit sticky top-28 space-y-4">
               <h2 className="font-semibold text-gray-800">Order Summary</h2>
 
-              {/* Delivery */}
               <div>
                 <p className="text-sm font-semibold text-gray-700 mb-2">Delivery Type:</p>
                 <div className="space-y-2">
@@ -185,7 +241,6 @@ export default function CartPage() {
                   className="input-field text-sm" placeholder="Any special instructions?" />
               </div>
 
-              {/* Price breakdown */}
               <div className="space-y-1 text-sm border-t pt-3">
                 <div className="flex justify-between text-muted"><span>Subtotal ({cart.length} items)</span><span>₹{subtotal.toLocaleString()}</span></div>
                 <div className="flex justify-between text-muted"><span>Delivery</span><span>{deliveryCharge === 0 ? 'FREE' : `₹${deliveryCharge}`}</span></div>
@@ -194,12 +249,35 @@ export default function CartPage() {
                 <div className="flex justify-between font-bold text-base"><span>Total</span><span className="text-primary">₹{total.toLocaleString()}</span></div>
               </div>
 
-              <button onClick={handlePlaceOrder} disabled={placing}
+              <button onClick={handleProceedToPayment} disabled={placing}
                 className="w-full py-3 bg-accent hover:bg-yellow-400 text-gray-900 font-bold rounded-xl transition-colors disabled:opacity-50">
-                {placing ? '⏳ Placing Order...' : `⚡ Place Order — ₹${total.toLocaleString()}`}
+                {placing ? '⏳ Please wait...' : `Proceed to Payment — ₹${total.toLocaleString()}`}
               </button>
-              <p className="text-xs text-center text-muted">Seller will accept/reject your order. You'll be notified instantly.</p>
+              <p className="text-xs text-center text-muted">You can choose Cash, UPI, or Online payment on the next screen.</p>
             </div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-[1fr_360px] gap-6">
+            <div className="space-y-3">
+              {cart.map(item => (
+                <div key={item._id} className="card p-4 flex items-center gap-4">
+                  <img src={item.imageUrl || 'https://placehold.co/80x80/f0f2f5/ccc?text=?'}
+                    onError={e => e.target.src='https://placehold.co/80x80/f0f2f5/ccc?text=?'}
+                    className="w-20 h-20 rounded-xl object-cover flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 text-sm truncate">{item.title}</p>
+                    <p className="text-xs text-muted">{item.category}</p>
+                    <p className="text-primary font-bold mt-1">₹{item.price.toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-dark">₹{(item.price * item.quantity).toLocaleString()}</p>
+                    <p className="text-xs text-muted mt-1">Qty: {item.quantity}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <PaymentDetails />
           </div>
         )}
       </main>

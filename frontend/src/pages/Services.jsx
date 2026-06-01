@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import Navbar from '../components/Navbar.jsx'
+import { showToast } from '../components/Toast.jsx'
 
 function useInView() {
   const ref = useRef(null)
@@ -51,8 +52,95 @@ const WHY = [
   { icon: '💰', title: 'Transparent Pricing', desc: 'No hidden charges. What you see is what you pay' }
 ]
 
+function BookingModal({ service, onClose, onSubmit }) {
+  const [form, setForm] = useState({ name: '', phone: '', location: '', date: '', time: '', notes: '', paymentMode: 'cash' })
+  const [submitted, setSubmitted] = useState(false)
+
+  const update = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }))
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!form.name.trim() || !form.phone.trim() || !form.location.trim() || !form.date) {
+      showToast('Please fill all required fields', 'error')
+      return
+    }
+    setSubmitted(true)
+    onSubmit(service.title, form)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden">
+        <div className="p-5 bg-gradient-to-r from-teal-600 to-emerald-600 text-white relative">
+          <button onClick={onClose} className="absolute top-4 right-4 text-2xl leading-none">×</button>
+          <div className="text-3xl mb-2">{service.icon}</div>
+          <h2 className="font-display text-2xl font-bold">Book {service.title}</h2>
+          <p className="text-sm text-white/80 mt-1">Please complete the booking form to request this service.</p>
+        </div>
+
+        {submitted ? (
+          <div className="p-6 text-center">
+            <div className="text-6xl mb-4">🎉</div>
+            <h3 className="text-2xl font-bold">Booking Request Sent!</h3>
+            <p className="text-muted mt-2">We have received your request for {service.title}. Our team will contact you soon.</p>
+            <button onClick={onClose} className="mt-6 px-6 py-3 bg-primary text-white rounded-full font-semibold">Close</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label className="block text-sm font-semibold text-gray-700">Name *</label>
+              <input type="text" value={form.name} onChange={update('name')} className="input-field" placeholder="Your full name" required />
+              <label className="block text-sm font-semibold text-gray-700">Phone *</label>
+              <input type="tel" value={form.phone} onChange={update('phone')} className="input-field" placeholder="Mobile number" required />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700">Location *</label>
+                <input type="text" value={form.location} onChange={update('location')} className="input-field" placeholder="City, area" required />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700">Preferred Date *</label>
+                <input type="date" value={form.date} onChange={update('date')} className="input-field" required />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700">Preferred Time</label>
+                <input type="time" value={form.time} onChange={update('time')} className="input-field" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700">Payment Mode</label>
+                <select value={form.paymentMode} onChange={update('paymentMode')} className="input-field">
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                  <option value="online">Online</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700">Notes</label>
+              <textarea value={form.notes} onChange={update('notes')} rows={3} className="input-field resize-none" placeholder="Any special instructions?" />
+            </div>
+
+            <button type="submit" className="w-full py-3 bg-primary text-white rounded-full font-semibold hover:bg-primaryDark transition-colors">Request Booking</button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Services() {
-  const [booked, setBooked] = useState(null)
+  const [selectedService, setSelectedService] = useState(null)
+  const [recentBooking, setRecentBooking] = useState(null)
+
+  const handleBookingSubmit = (title) => {
+    setRecentBooking(title)
+    setTimeout(() => setRecentBooking(null), 4500)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,7 +156,12 @@ export default function Services() {
         </div>
 
         <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
-          {/* Services grid */}
+          {recentBooking && (
+            <div className="rounded-3xl border border-green-200 bg-green-50 p-5 text-green-900 shadow-sm">
+              <p className="font-semibold">Your booking request for <span className="font-bold">{recentBooking}</span> has been sent. We will contact you shortly.</p>
+            </div>
+          )}
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {SERVICES.map((svc, i) => (
               <AnimSection key={svc.title} delay={i * 80}>
@@ -86,10 +179,10 @@ export default function Services() {
                       ))}
                     </ul>
                     <button
-                      onClick={() => setBooked(svc.title)}
+                      onClick={() => setSelectedService(svc)}
                       className={`w-full py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r ${svc.color} hover:opacity-90 transition-all hover:scale-[1.02] active:scale-95 shadow-md`}
                     >
-                      {booked === svc.title ? '✅ Booking Confirmed!' : 'Book Now'}
+                      Book Now
                     </button>
                   </div>
                 </div>
@@ -97,7 +190,6 @@ export default function Services() {
             ))}
           </div>
 
-          {/* Why Book */}
           <AnimSection>
             <h2 className="font-display text-3xl font-bold text-center mb-8">✨ Why Book Through Us?</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -111,7 +203,6 @@ export default function Services() {
             </div>
           </AnimSection>
 
-          {/* CTA */}
           <AnimSection>
             <div className="card p-10 text-center bg-gradient-to-r from-teal-600 to-green-500 text-white">
               <h2 className="font-display text-3xl font-bold">Book a Service Today! ✨</h2>
@@ -123,6 +214,14 @@ export default function Services() {
           </AnimSection>
         </div>
       </main>
+
+      {selectedService && (
+        <BookingModal
+          service={selectedService}
+          onClose={() => setSelectedService(null)}
+          onSubmit={handleBookingSubmit}
+        />
+      )}
     </div>
   )
 }

@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { CartProvider } from './context/CartContext.jsx'
 import { LangProvider } from './context/LangContext.jsx'
@@ -30,6 +31,14 @@ function ProtectedRoute({ children, role }) {
   return children
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [pathname])
+  return null
+}
+
 export default function App() {
   return (
     <LangProvider>
@@ -37,6 +46,7 @@ export default function App() {
         <AuthProvider>
           <CartProvider>
             <ToastContainer />
+            <ScrollToTop />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
