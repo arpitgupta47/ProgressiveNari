@@ -47,27 +47,31 @@ export default function App() {
           <CartProvider>
             <ToastContainer />
             <ScrollToTop />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/products" element={<ProductsPage />} />
-              <Route path="/products/:id" element={<ProductDetail />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/star-worker" element={<StarWorker />} />
-              <Route path="/courses" element={<Courses />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-              <Route path="/cart" element={<ProtectedRoute role="customer"><CartPage /></ProtectedRoute>} />
-              <Route path="/orders" element={<ProtectedRoute role="customer"><OrdersPage /></ProtectedRoute>} />
-              <Route path="/customer/dashboard" element={<ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>} />
-              <Route path="/seller/dashboard" element={<ProtectedRoute role="seller"><SellerDashboard /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            <Footer />
+            <div className="min-h-screen flex flex-col">
+              <div className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/products" element={<ProductsPage />} />
+                  <Route path="/products/:id" element={<ProductDetail />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/star-worker" element={<StarWorker />} />
+                  <Route path="/courses" element={<Courses />} />
+                  <Route path="/services" element={<Services />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                  <Route path="/cart" element={<ProtectedRoute role="customer"><CartPage /></ProtectedRoute>} />
+                  <Route path="/orders" element={<ProtectedRoute role="customer"><OrdersPage /></ProtectedRoute>} />
+                  <Route path="/customer/dashboard" element={<ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>} />
+                  <Route path="/seller/dashboard" element={<ProtectedRoute role="seller"><SellerDashboard /></ProtectedRoute>} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </div>
+              <Footer />
+            </div>
           </CartProvider>
         </AuthProvider>
       </LocationProvider>
