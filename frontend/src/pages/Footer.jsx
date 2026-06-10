@@ -62,7 +62,7 @@ export default function Footer() {
             {/* Social */}
             <div className="flex gap-3 mt-4">
               {[
-                { icon: '📘', label: 'Facebook', href: '#' },
+                { icon: '📘', label: 'Linkedin', href: 'www.linkedin.com/in/arpit-gupta-28370b288' },
                 { icon: '📸', label: 'Instagram', href: '#' },
                 { icon: '🐦', label: 'Twitter', href: '#' },
                 { icon: '▶️', label: 'YouTube', href: '#' }
