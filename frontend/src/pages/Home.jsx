@@ -208,7 +208,7 @@ export default function Home() {
           <AnimSection>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { icon: '🚚', title: lang === 'hi' ? '3 डिलीवरी विकल्प' : '3 Delivery Options', desc: lang === 'hi' ? 'सेल्फ पिकअप • सेलर डिलीवरी • कंपनी डिलीवरी  : 'Self pickup • Seller delivery  • Company delivery ' },
+                { icon: '🚚', title: lang === 'hi' ? '3 डिलीवरी विकल्प' : '3 Delivery Options', desc: lang === 'hi' ? 'सेल्फ पिकअप : 0 • सेलर डिलीवरी : 10 • कंपनी डिलीवरी :100' : 'Self pickup : 0 • Seller delivery : 10  • Company delivery : 100' },
                 { icon: '🔒', title: lang === 'hi' ? 'सुरक्षित भुगतान' : 'Secure Payments', desc: lang === 'hi' ? 'रेज़रपे द्वारा सुरक्षित भुगतान' : 'Razorpay powered secure payment gateway' },
                 { icon: '🔔', title: lang === 'hi' ? 'तुरंत सूचना' : 'Instant Notifications', desc: lang === 'hi' ? 'खरीदारों और विक्रेताओं के लिए रियल-टाइम अपडेट' : 'Real-time order updates for buyers & sellers' }
               ].map(f => (
