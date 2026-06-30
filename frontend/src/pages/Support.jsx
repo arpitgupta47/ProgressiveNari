@@ -42,8 +42,8 @@ export default function Support() {
         {/* Quick contacts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {[
-            { icon: '📧', title: 'Email', value: 'support@progressivenaari.com', action: 'mailto:support@progressivenaari.com', label: lang === 'hi' ? 'ईमेल करें' : 'Send Email' },
-            { icon: '📱', title: lang === 'hi' ? 'WhatsApp' : 'WhatsApp', value: '+91 98765 43210', action: 'https://wa.me/919876543210', label: 'WhatsApp' },
+            { icon: '📧', title: 'Email', value: 'guptaarpit.tech@gmail.com', action: 'mailto:guptaarpit.tech@gmail.com', label: lang === 'hi' ? 'ईमेल करें' : 'Send Email' },
+            { icon: '📱', title: lang === 'hi' ? 'Customer Care' : 'Customer Care', value: '+91 1234567899', action: 'https://wa.me/1234567899', label: 'WhatsApp' },
             { icon: '⏰', title: lang === 'hi' ? 'समय' : 'Hours', value: lang === 'hi' ? 'सोम-शनि 9am-6pm' : 'Mon-Sat 9am-6pm', action: null, label: '' }
           ].map(c => (
             <div key={c.title} className="card p-5 text-center hover:shadow-md transition-all">
