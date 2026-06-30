@@ -9,7 +9,7 @@ export default function Privacy() {
       <main className="pt-28 pb-16 max-w-4xl mx-auto px-4">
         <div className="card p-8">
           <h1 className="font-display text-3xl font-bold mb-2">{lang === 'hi' ? 'गोपनीयता नीति' : 'Privacy Policy'}</h1>
-          <p className="text-muted text-sm mb-8">{lang === 'hi' ? 'अंतिम अपडेट: जनवरी 2024' : 'Last updated: January 2024'}</p>
+          <p className="text-muted text-sm mb-8">{lang === 'hi' ? 'अंतिम अपडेट: जनवरी 2026' : 'Last updated: January 2026'}</p>
           {[
             { title: lang === 'hi' ? '1. हम क्या जानकारी एकत्र करते हैं' : '1. Information We Collect', body: lang === 'hi' ? 'हम नाम, ईमेल, फोन नंबर, पता, और भुगतान जानकारी एकत्र करते हैं। Google से लॉगिन पर हम आपकी Google प्रोफाइल जानकारी भी प्राप्त करते हैं। हम आपकी स्थान जानकारी केवल तभी एकत्र करते हैं जब आप इसकी अनुमति देते हैं।' : 'We collect name, email, phone number, address, and payment information. For Google login, we also receive your Google profile information. We collect location data only with your explicit permission.' },
             { title: lang === 'hi' ? '2. जानकारी का उपयोग' : '2. How We Use Your Information', body: lang === 'hi' ? 'आपकी जानकारी का उपयोग: ऑर्डर संसाधित करने, भुगतान करने, सूचनाएं भेजने, और प्लेटफॉर्म सुधारने के लिए किया जाता है। हम आपकी जानकारी तीसरे पक्ष को नहीं बेचते।' : 'Your information is used to: process orders, facilitate payments, send notifications, and improve our platform. We never sell your data to third parties.' },
