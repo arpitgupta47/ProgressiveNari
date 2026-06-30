@@ -18,7 +18,7 @@ export default function Terms() {
             { title: lang === 'hi' ? '5. उत्पाद नीति' : '5. Product Policy', body: lang === 'hi' ? 'विक्रेता केवल वही उत्पाद बेच सकते हैं जो उनके द्वारा बनाए गए हों या जिन पर उनका अधिकार हो। नकली, अवैध या हानिकारक उत्पाद बेचना सख्त मना है।' : 'Sellers can only sell products they make or have rights to. Selling counterfeit, illegal, or harmful products is strictly prohibited.' },
             { title: lang === 'hi' ? '6. डिलीवरी' : '6. Delivery', body: lang === 'hi' ? 'तीन डिलीवरी विकल्प उपलब्ध हैं: सेल्फ पिकअप (निःशुल्क), सेलर डिलीवरी (₹50), और कंपनी डिलीवरी (₹200)। डिलीवरी का समय विक्रेता और डिलीवरी प्रकार पर निर्भर करता है।' : 'Three delivery options: Self Pickup (Free), Seller Delivery (₹50), Company Delivery (₹200). Delivery time depends on seller and delivery type.' },
             { title: lang === 'hi' ? '7. खाता बंद करना' : '7. Account Termination', body: lang === 'hi' ? 'हम किसी भी समय, बिना सूचना के, उन खातों को बंद कर सकते हैं जो इन नियमों का उल्लंघन करते हैं।' : 'We reserve the right to terminate accounts that violate these terms at any time without notice.' },
-            { title: lang === 'hi' ? '8. संपर्क' : '8. Contact', body: lang === 'hi' ? 'किसी भी प्रश्न के लिए support@progressivenaari.com पर संपर्क करें।' : 'For any questions, contact us at support@progressivenaari.com' }
+            { title: lang === 'hi' ? '8. संपर्क' : '8. Contact', body: lang === 'hi' ? 'किसी भी प्रश्न के लिए guptaarpit.tech@gmail.com पर संपर्क करें।' : 'For any questions, contact us at support@progressivenaari.com' }
           ].map(section => (
             <div key={section.title} className="mb-6">
               <h2 className="font-semibold text-gray-800 text-lg mb-2">{section.title}</h2>
