@@ -63,7 +63,7 @@ export default function Navbar() {
               </div>
               <div className="hidden sm:block">
                 <div className="font-display font-bold text-lg leading-none text-white">Progressive</div>
-                <div className="text-xs text-accent leading-none font-semibold">Naari 🌸</div>
+                <div className="text-xs text-accent leading-none font-semibold">Nari</div>
               </div>
             </div>
           </Link>
