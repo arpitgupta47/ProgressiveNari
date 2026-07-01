@@ -80,7 +80,7 @@ export default function Login() {
       }
       login(res.data.token, res.data.user)
       showToast(lang === 'hi' ? `स्वागत है, ${res.data.user.name}!` : `Welcome back, ${res.data.user.name}!`, 'success')
-      navigate(userRole === 'seller' ? '/seller/dashboard' : '/customer/dashboard')
+      navigate(userRole === 'seller' ? '/seller/dashboard' : userRole === 'delivery_person' ? '/delivery/dashboard' : '/customer/dashboard')
     } catch (err) {
       const message = err.response?.data?.message || (lang === 'hi' ? 'लॉगिन विफल' : 'Login failed')
       const endpoint = err.config?.url ? `${err.config.baseURL || ''}${err.config.url}` : '/auth/login'
@@ -96,15 +96,15 @@ export default function Login() {
         <div className="max-w-md mx-auto">
 
           {/* Role selector */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {['seller', 'customer'].map(r => (
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {['seller', 'customer', 'delivery_person'].map(r => (
               <button key={r} onClick={() => setRole(r)}
                 className={`py-3 rounded-2xl font-semibold text-sm transition-all border-2 flex items-center justify-center gap-2 shadow-sm
                   ${role === r
-                    ? r === 'seller' ? 'bg-primary border-primary text-white shadow-primary/20 shadow-lg' : 'bg-dark border-dark text-white shadow-dark/20 shadow-lg'
+                    ? r === 'seller' ? 'bg-primary border-primary text-white shadow-primary/20 shadow-lg' : r === 'delivery_person' ? 'bg-blue-600 border-blue-600 text-white shadow-blue-600/20 shadow-lg' : 'bg-dark border-dark text-white shadow-dark/20 shadow-lg'
                     : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                <span className="text-lg">{r === 'seller' ? '🏪' : '🛍️'}</span>
-                <span>{r === 'seller' ? (lang === 'hi' ? 'विक्रेता' : 'Seller') : (lang === 'hi' ? 'ग्राहक' : 'Customer')}</span>
+                <span className="text-lg">{r === 'seller' ? '🏪' : r === 'delivery_person' ? '🚚' : '🛍️'}</span>
+                <span>{r === 'seller' ? 'Seller' : r === 'delivery_person' ? 'Delivery' : 'Customer'}</span>
               </button>
             ))}
           </div>
