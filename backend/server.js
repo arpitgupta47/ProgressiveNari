@@ -15,6 +15,7 @@ import productRoutes from './routes/product.js'
 import orderRoutes from './routes/order.js'
 import paymentRoutes from './routes/payment.js'
 import notificationRoutes from './routes/notification.js'
+import deliveryRoutes from './routes/delivery.js'
 
 dotenv.config()
 connectDB()
@@ -105,6 +106,7 @@ app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/payment', paymentRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/delivery', deliveryRoutes)
 
 const frontendDistPath = path.resolve(__dirname, '../frontend/dist')
 app.use(express.static(frontendDistPath))
