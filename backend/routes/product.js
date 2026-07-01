@@ -1,51 +1,98 @@
 import express from 'express'
-import Joi from 'joi'
 import auth from '../middleware/auth.js'
-import validate from '../middleware/validate.js'
-import upload from '../middleware/upload.js'
 import Product from '../models/Product.js'
+import User from '../models/User.js'
 
 const router = express.Router()
 
-const productSchema = Joi.object({
-  title: Joi.string().trim().min(2).max(100).required(),
-  description: Joi.string().trim().min(10).max(2000).required(),
-  category: Joi.string().trim().required(),
-  price: Joi.number().min(1).required(),
-  stock: Joi.number().min(0).default(1),
-  location: Joi.string().trim().allow('').optional(),
-  tags: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string()).optional(),
-  imageUrl: Joi.string().uri().optional().allow('')
-})
-
-// Get all products (public) - with location-based filtering
+// =============================================
+// GET ALL PRODUCTS — with LOCATION FILTERING
+// =============================================
 router.get('/', async (req, res) => {
   try {
-    const { category, search, minPrice, maxPrice, page = 1, limit = 20, lat, lng, radius = 50 } = req.query
+    const {
+      category, search, minPrice, maxPrice,
+      page = 1, limit = 20,
+      // Location params from customer
+      lat, lng, radius = 50,       // radius in km
+      city, pincode, district       // text-based location filter
+    } = req.query
+
     const filter = { isActive: true }
 
-    // Location-based filtering: only show sellers from user's location (or all if no location provided)
-    if (lat && lng) {
-      // If location is provided, filter sellers by city/district proximity
-      // For now, we'll match by location field or return sellers from the same state
-      const userLat = parseFloat(lat)
-      const userLng = parseFloat(lng)
-      
-      // Add geoNear aggregation if location coordinates provided
-      // For simplicity: match sellers whose location field is close to user's location
-      // This is a simplified approach - in production use MongoDB geospatial queries
+    // Category filter
+    if (category && category !== 'all') filter.category = category
+
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { city: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } }
+      ]
     }
 
-    if (category && category !== 'all') filter.category = category
-    if (search) filter.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } }
-    ]
+    // Price filter
     if (minPrice || maxPrice) {
       filter.price = {}
       if (minPrice) filter.price.$gte = Number(minPrice)
       if (maxPrice) filter.price.$lte = Number(maxPrice)
     }
+
+    // ── LOCATION FILTER ──────────────────────────────────────
+    // Priority 1: GPS coordinates (most accurate)
+    if (lat && lng) {
+      const latNum = parseFloat(lat)
+      const lngNum = parseFloat(lng)
+      const radiusKm = parseFloat(radius)
+
+      // Find sellers within radius
+      // 1 degree lat ≈ 111 km
+      const latDelta = radiusKm / 111
+      const lngDelta = radiusKm / (111 * Math.cos(latNum * Math.PI / 180))
+
+      // Find sellers in radius
+      const nearbySellers = await User.find({
+        role: 'seller',
+        isActive: true,
+        latitude: { $gte: latNum - latDelta, $lte: latNum + latDelta },
+        longitude: { $gte: lngNum - lngDelta, $lte: lngNum + lngDelta }
+      }).select('_id')
+
+      const sellerIds = nearbySellers.map(s => s._id)
+
+      if (sellerIds.length > 0) {
+        // Also filter products that have coordinates within range
+        filter.$and = filter.$and || []
+        filter.$and.push({
+          $or: [
+            { seller: { $in: sellerIds } },
+            {
+              latitude: { $gte: latNum - latDelta, $lte: latNum + latDelta },
+              longitude: { $gte: lngNum - lngDelta, $lte: lngNum + lngDelta }
+            }
+          ]
+        })
+      } else {
+        // No sellers found in GPS radius — return empty
+        return res.json({ products: [], total: 0, page: Number(page), pages: 0, locationFiltered: true, message: 'No sellers found in your area' })
+      }
+    }
+    // Priority 2: City name filter
+    else if (city) {
+      filter.city = { $regex: city, $options: 'i' }
+    }
+    // Priority 3: Pincode filter
+    else if (pincode) {
+      filter.pincode = pincode
+    }
+    // Priority 4: District filter
+    else if (district) {
+      filter.district = { $regex: district, $options: 'i' }
+    }
+    // No location = show ALL products (default behaviour)
+    // ──────────────────────────────────────────────────────────
 
     const skip = (Number(page) - 1) * Number(limit)
     const total = await Product.countDocuments(filter)
@@ -53,20 +100,24 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
-      .populate('seller', 'name email location')
+      .populate('seller', 'name email city state latitude longitude')
 
-    res.json({ products, total, page: Number(page), pages: Math.ceil(total / Number(limit)) })
+    res.json({
+      products,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      locationFiltered: !!(lat && lng) || !!city || !!pincode
+    })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 })
 
-// Get seller's own products
+// GET SELLER'S OWN PRODUCTS
 router.get('/my-products', auth, async (req, res) => {
   try {
-    if (req.user.role !== 'seller') {
-      return res.status(403).json({ message: 'Only sellers can access this.' })
-    }
+    if (req.user.role !== 'seller') return res.status(403).json({ message: 'Only sellers can access this.' })
     const products = await Product.find({ seller: req.user.id }).sort({ createdAt: -1 })
     res.json(products)
   } catch (error) {
@@ -74,10 +125,10 @@ router.get('/my-products', auth, async (req, res) => {
   }
 })
 
-// Get single product
+// GET SINGLE PRODUCT
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('seller', 'name email phone location')
+    const product = await Product.findById(req.params.id).populate('seller', 'name email phone city state latitude longitude upiId')
     if (!product) return res.status(404).json({ message: 'Product not found' })
     res.json(product)
   } catch (error) {
@@ -85,17 +136,22 @@ router.get('/:id', async (req, res) => {
   }
 })
 
-// Create product (seller only)
-router.post('/', auth, validate(productSchema), async (req, res) => {
+// CREATE PRODUCT (seller only)
+router.post('/', auth, async (req, res) => {
   try {
-    if (req.user.role !== 'seller') {
-      return res.status(403).json({ message: 'Only sellers can add products.' })
-    }
+    if (req.user.role !== 'seller') return res.status(403).json({ message: 'Only sellers can add products.' })
     const { title, description, category, price, stock, imageUrl, location, tags } = req.body
+
+    // Get seller's location to embed in product
+    const seller = await User.findById(req.user.id)
+
     const product = await Product.create({
-      title, description, category, price, stock: stock || 1,
-      imageUrl: imageUrl || '', location, tags: tags || [],
-      seller: req.user.id
+      title, description, category, price: Number(price), stock: Number(stock) || 1,
+      imageUrl: imageUrl || '', location: location || seller?.city || '',
+      city: seller?.city || '', state: seller?.state || '',
+      district: seller?.district || '', pincode: seller?.pincode || '',
+      latitude: seller?.latitude || null, longitude: seller?.longitude || null,
+      tags: tags || [], seller: req.user.id
     })
     res.status(201).json(product)
   } catch (error) {
@@ -103,14 +159,12 @@ router.post('/', auth, validate(productSchema), async (req, res) => {
   }
 })
 
-// Update product
+// UPDATE PRODUCT
 router.put('/:id', auth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ message: 'Product not found' })
-    if (product.seller.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized' })
-    }
+    if (product.seller.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized' })
     const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true })
     res.json(updated)
   } catch (error) {
@@ -118,26 +172,17 @@ router.put('/:id', auth, async (req, res) => {
   }
 })
 
-// Delete product
+// DELETE PRODUCT
 router.delete('/:id', auth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ message: 'Product not found' })
-    if (product.seller.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized' })
-    }
+    if (product.seller.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized' })
     await product.deleteOne()
-    res.json({ message: 'Product removed successfully' })
+    res.json({ message: 'Product removed' })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
-})
-
-// Upload product image
-router.post('/upload-image', auth, upload.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).json({ message: 'No image uploaded' })
-  const imageUrl = `${process.env.BACKEND_URL || 'http://localhost:5000'}/uploads/${req.file.filename}`
-  res.json({ imageUrl })
 })
 
 export default router
