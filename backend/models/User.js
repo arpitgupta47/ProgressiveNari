@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, default: '' }, // empty for Google OAuth users
-  role: { type: String, enum: ['seller', 'customer', 'admin'], required: true },
+  role: { type: String, enum: ['seller', 'customer', 'admin', 'delivery_person'], required: true },
   phone: { type: String, default: '' },
   address: { type: String, default: '' },
 
@@ -23,6 +23,14 @@ const userSchema = new mongoose.Schema({
   upiId: { type: String, default: '' },
   razorpayContactId: { type: String, default: '' },
   razorpayFundAccountId: { type: String, default: '' },
+
+  // Delivery Person details
+  deliveryPersonVehicle: { type: String, enum: ['bike', 'scooter', 'bicycle', 'auto', 'car', ''], default: '' },
+  deliveryPersonDocumentId: { type: String, default: '' },
+  deliveryPersonVerified: { type: Boolean, default: false },
+  deliveryPersonZones: [{ type: String }], // Cities/zones they deliver in
+  deliveryPersonRating: { type: Number, default: 0 },
+  deliveryPersonOrders: { type: Number, default: 0 },
 
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
