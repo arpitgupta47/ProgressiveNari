@@ -21,7 +21,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [locationFiltered, setLocationFiltered] = useState(false)
-  const [radius, setRadius] = useState(25) // km
+  const [radius, setRadius] = useState(1) // km
   const [noNearby, setNoNearby] = useState(false)
 
   const search = searchParams.get('search') || ''
