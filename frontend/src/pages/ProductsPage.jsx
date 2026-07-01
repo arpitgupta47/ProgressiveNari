@@ -8,7 +8,7 @@ import { t } from '../utils/translations.js'
 import api from '../api/api.js'
 
 const CATEGORIES = ['all', 'Pickles', 'Bakery', 'Cloth', 'Paintings', 'Art & Craft', 'Saree', 'Jewellery', 'Food', 'Other']
-const RADIUS_OPTIONS = [5, 10, 25, 50, 100]
+const RADIUS_OPTIONS = [1, 5, 10, 20, 35]
 
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
