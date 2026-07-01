@@ -12,7 +12,7 @@ export default function Register() {
   const { lang } = useLang()
   const navigate = useNavigate()
   const [role, setRole] = useState('customer')
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', address: '', gender: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', address: '', gender: '', vehicle: '', zones: '' })
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -50,7 +50,7 @@ export default function Register() {
       const res = await api.post('/auth/google', { credential: response.credential, role, gender: form.gender })
       login(res.data.token, res.data.user)
       showToast('Welcome to Progressive Naari! 🌸', 'success')
-      navigate(res.data.user.role === 'seller' ? '/seller/dashboard' : '/customer/dashboard')
+      navigate(res.data.user.role === 'seller' ? '/seller/dashboard' : res.data.user.role === 'delivery_person' ? '/delivery/dashboard' : '/customer/dashboard')
     } catch (err) {
       setError(err.response?.data?.message || 'Google signup failed')
     } finally { setGoogleLoading(false) }
@@ -83,7 +83,7 @@ export default function Register() {
       const res = await api.post('/auth/register', { ...form, role })
       login(res.data.token, res.data.user)
       showToast(lang === 'hi' ? 'खाता बन गया! स्वागत है! 🌸' : 'Account created! Welcome! 🌸', 'success')
-      navigate(role === 'seller' ? '/seller/dashboard' : '/customer/dashboard')
+      navigate(role === 'seller' ? '/seller/dashboard' : role === 'delivery_person' ? '/delivery/dashboard' : '/customer/dashboard')
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed'
       setError(msg)
@@ -100,16 +100,17 @@ export default function Register() {
         <div className="max-w-lg mx-auto">
 
           {/* Role selector */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-3 gap-2 mb-4">
             {[
-              { value: 'customer', label: lang === 'hi' ? 'ग्राहक बनें' : 'Join as Customer', icon: '🛍️', desc: lang === 'hi' ? 'उत्पाद खरीदें' : 'Buy products' },
-              { value: 'seller', label: lang === 'hi' ? 'विक्रेता बनें' : 'Join as Seller', icon: '🏪', desc: lang === 'hi' ? 'उत्पाद बेचें (केवल महिला)' : 'Sell products (Women only)' }
+              { value: 'customer', label: 'Join as Customer', icon: '🛍️', desc: 'Buy products' },
+              { value: 'seller', label: 'Join as Seller', icon: '🏪', desc: 'Sell (Women only)' },
+              { value: 'delivery_person', label: 'Join as Delivery', icon: '🚚', desc: 'Deliver orders' }
             ].map(r => (
               <button key={r.value} onClick={() => { setRole(r.value); setError(null) }}
-                className={`p-3 rounded-2xl text-left border-2 transition-all shadow-sm
+                className={`p-2 rounded-2xl text-center border-2 transition-all shadow-sm
                   ${role === r.value ? 'border-primary bg-primary/5 shadow-primary/10 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                <span className="text-2xl">{r.icon}</span>
-                <div className="font-semibold text-sm mt-1 text-gray-800">{r.label}</div>
+                <span className="text-xl">{r.icon}</span>
+                <div className="font-semibold text-xs mt-1 text-gray-800">{r.label}</div>
                 <div className="text-xs text-muted">{r.desc}</div>
               </button>
             ))}
@@ -217,6 +218,28 @@ export default function Register() {
                       <label className="block text-sm font-semibold text-gray-700 mb-1">{t(lang, 'address')}</label>
                       <input value={form.address} onChange={update('address')} className="input-field" placeholder={lang === 'hi' ? 'शहर, राज्य' : 'City, State'} />
                     </div>
+
+                    {/* Delivery person fields */}
+                    {role === 'delivery_person' && (
+                      <>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">🚗 Vehicle Type *</label>
+                          <select value={form.vehicle} onChange={update('vehicle')} className="input-field" required>
+                            <option value="">Select your vehicle</option>
+                            <option value="bike">🏍️ Bike</option>
+                            <option value="scooter">🛵 Scooter</option>
+                            <option value="bicycle">🚲 Bicycle</option>
+                            <option value="auto">🚐 Auto Rickshaw</option>
+                            <option value="car">🚗 Car</option>
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">📍 Service Areas (comma-separated) *</label>
+                          <textarea value={form.zones} onChange={update('zones')} className="input-field resize-none" placeholder="e.g., Delhi, Noida, Gurgaon" rows="2" required />
+                          <p className="text-xs text-muted mt-1">Enter cities or areas you can deliver to</p>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <button type="submit" disabled={loading || genderBlocked}
