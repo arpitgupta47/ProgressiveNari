@@ -80,7 +80,13 @@ export default function Register() {
     if (genderBlocked) return
     setLoading(true)
     try {
-      const res = await api.post('/auth/register', { ...form, role })
+      // Only send vehicle/zones for delivery_person
+      const payload = { ...form, role }
+      if (role !== 'delivery_person') {
+        delete payload.vehicle
+        delete payload.zones
+      }
+      const res = await api.post('/auth/register', payload)
       login(res.data.token, res.data.user)
       showToast(lang === 'hi' ? 'खाता बन गया! स्वागत है! 🌸' : 'Account created! Welcome! 🌸', 'success')
       navigate(role === 'seller' ? '/seller/dashboard' : role === 'delivery_person' ? '/delivery/dashboard' : '/customer/dashboard')
