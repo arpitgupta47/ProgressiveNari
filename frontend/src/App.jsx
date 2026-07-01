@@ -12,6 +12,7 @@ import ProductsPage from './pages/ProductsPage.jsx'
 import ProductDetail from './pages/ProductDetail.jsx'
 import SellerDashboard from './pages/SellerDashboard.jsx'
 import CustomerDashboard from './pages/CustomerDashboard.jsx'
+import DeliveryDashboard from './pages/DeliveryDashboard.jsx'
 import CartPage from './pages/CartPage.jsx'
 import OrdersPage from './pages/OrdersPage.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
@@ -67,6 +68,7 @@ export default function App() {
                   <Route path="/orders" element={<ProtectedRoute role="customer"><OrdersPage /></ProtectedRoute>} />
                   <Route path="/customer/dashboard" element={<ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>} />
                   <Route path="/seller/dashboard" element={<ProtectedRoute role="seller"><SellerDashboard /></ProtectedRoute>} />
+                  <Route path="/delivery/dashboard" element={<ProtectedRoute role="delivery_person"><DeliveryDashboard /></ProtectedRoute>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </div>
