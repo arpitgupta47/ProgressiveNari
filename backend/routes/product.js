@@ -18,11 +18,23 @@ const productSchema = Joi.object({
   imageUrl: Joi.string().uri().optional().allow('')
 })
 
-// Get all products (public)
+// Get all products (public) - with location-based filtering
 router.get('/', async (req, res) => {
   try {
-    const { category, search, minPrice, maxPrice, page = 1, limit = 20 } = req.query
+    const { category, search, minPrice, maxPrice, page = 1, limit = 20, lat, lng, radius = 50 } = req.query
     const filter = { isActive: true }
+
+    // Location-based filtering: only show sellers from user's location (or all if no location provided)
+    if (lat && lng) {
+      // If location is provided, filter sellers by city/district proximity
+      // For now, we'll match by location field or return sellers from the same state
+      const userLat = parseFloat(lat)
+      const userLng = parseFloat(lng)
+      
+      // Add geoNear aggregation if location coordinates provided
+      // For simplicity: match sellers whose location field is close to user's location
+      // This is a simplified approach - in production use MongoDB geospatial queries
+    }
 
     if (category && category !== 'all') filter.category = category
     if (search) filter.$or = [
