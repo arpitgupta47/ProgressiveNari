@@ -1,121 +1,82 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useLang } from '../context/LangContext.jsx'
-import { t } from '../utils/translations.js'
-import api from '../api/api.js'
 import { showToast } from '../components/Toast.jsx'
+import api from '../api/api.js'
 
 export default function Register() {
   const { login } = useAuth()
   const { lang } = useLang()
   const navigate = useNavigate()
   const [role, setRole] = useState('customer')
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', address: '', gender: '', vehicle: '', zones: '' })
+  const [gender, setGender] = useState('')
+  const [genderBlocked, setGenderBlocked] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState(null)
   const [showPass, setShowPass] = useState(false)
-  const [genderBlocked, setGenderBlocked] = useState(false)
+  const [form, setForm] = useState({
+    name: '', email: '', password: '', phone: '', address: '',
+    city: '', state: '', pincode: '',
+    vehicleType: '', vehicleNumber: '', deliveryZone: ''
+  })
 
-  const update = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }))
+  const update = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
 
-  // Check gender block for seller
-  useEffect(() => {
-    if (role === 'seller' && form.gender && form.gender !== 'female') {
-      setGenderBlocked(true)
-    } else {
-      setGenderBlocked(false)
-    }
-  }, [role, form.gender])
+  const ROLES = [
+    { value: 'customer', icon: '🛍️', label: lang === 'hi' ? 'ग्राहक' : 'Customer', desc: lang === 'hi' ? 'उत्पाद खरीदें' : 'Buy products' },
+    { value: 'seller', icon: '🏪', label: lang === 'hi' ? 'विक्रेता' : 'Seller', desc: lang === 'hi' ? 'केवल महिला' : 'Women only' },
+    { value: 'delivery', icon: '🏍️', label: lang === 'hi' ? 'डिलीवरी' : 'Delivery Boy', desc: lang === 'hi' ? 'ऑर्डर डिलीवर करें' : 'Deliver orders' },
+  ]
 
-  useEffect(() => {
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    document.head.appendChild(script)
-    return () => { try { document.head.removeChild(script) } catch {} }
-  }, [])
-
-  const handleGoogleResponse = async (response) => {
-    if (role === 'seller' && form.gender !== 'female') {
-      setError(lang === 'hi'
-        ? 'विक्रेता पंजीकरण केवल महिलाओं के लिए है।'
-        : 'Seller registration is for women only.')
-      return
-    }
-    setGoogleLoading(true)
-    try {
-      const res = await api.post('/auth/google', { credential: response.credential, role, gender: form.gender })
-      login(res.data.token, res.data.user)
-      showToast('Welcome to Progressive Naari! 🌸', 'success')
-      navigate(res.data.user.role === 'seller' ? '/seller/dashboard' : res.data.user.role === 'delivery_person' ? '/delivery/dashboard' : '/customer/dashboard')
-    } catch (err) {
-      setError(err.response?.data?.message || 'Google signup failed')
-    } finally { setGoogleLoading(false) }
+  const handleGenderChange = (g) => {
+    setGender(g)
+    setGenderBlocked(role === 'seller' && g !== 'female')
+    setError(null)
   }
 
-  const handleGoogleClick = () => {
-    if (role === 'seller' && form.gender !== 'female') {
-      setError(lang === 'hi' ? 'Google से रजिस्टर करने से पहले "महिला" चुनें।' : 'Please select "Female" before Google signup.')
-      return
-    }
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-    if (!clientId || clientId === 'your_google_client_id') {
-      showToast('Google login not configured. Use email/password.', 'info')
-      return
-    }
-    if (window.google) {
-      window.google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleResponse })
-      window.google.accounts.id.prompt()
-    }
+  const handleRoleChange = (r) => {
+    setRole(r)
+    setGender('')
+    setGenderBlocked(false)
+    setError(null)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
-    if (form.password.length < 6) { setError(lang === 'hi' ? 'पासवर्ड कम से कम 6 अक्षर का होना चाहिए' : 'Password must be at least 6 characters'); return }
-    if (role === 'seller' && !form.gender) { setError(lang === 'hi' ? 'कृपया लिंग चुनें' : 'Please select gender'); return }
+    if (form.password.length < 6) { setError(lang === 'hi' ? 'पासवर्ड कम से कम 6 अक्षर' : 'Password min 6 characters'); return }
+    if (role === 'seller' && !gender) { setError(lang === 'hi' ? 'लिंग चुनें' : 'Please select gender'); return }
     if (genderBlocked) return
     setLoading(true)
     try {
-      // Only send vehicle/zones for delivery_person
       const payload = { ...form, role }
-      if (role !== 'delivery_person') {
-        delete payload.vehicle
-        delete payload.zones
-      }
+      if (role === 'seller') payload.gender = gender
       const res = await api.post('/auth/register', payload)
       login(res.data.token, res.data.user)
-      showToast(lang === 'hi' ? 'खाता बन गया! स्वागत है! 🌸' : 'Account created! Welcome! 🌸', 'success')
-      navigate(role === 'seller' ? '/seller/dashboard' : role === 'delivery_person' ? '/delivery/dashboard' : '/customer/dashboard')
+      showToast(lang === 'hi' ? '🌸 खाता बन गया! स्वागत है!' : '🌸 Account created! Welcome!', 'success')
+      if (res.data.user.role === 'seller') navigate('/seller/dashboard')
+      else if (res.data.user.role === 'delivery') navigate('/delivery/dashboard')
+      else navigate('/customer/dashboard')
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed'
       setError(msg)
-      if (err.response?.data?.code === 'WOMEN_ONLY') {
-        setGenderBlocked(true)
-      }
+      if (err.response?.data?.code === 'WOMEN_ONLY') setGenderBlocked(true)
     } finally { setLoading(false) }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-primary/5">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-primary/5">
       <Navbar />
       <div className="pt-32 pb-12 px-4">
         <div className="max-w-lg mx-auto">
-
           {/* Role selector */}
           <div className="grid grid-cols-3 gap-2 mb-4">
-            {[
-              { value: 'customer', label: 'Join as Customer', icon: '🛍️', desc: 'Buy products' },
-              { value: 'seller', label: 'Join as Seller', icon: '🏪', desc: 'Sell (Women only)' },
-              { value: 'delivery_person', label: 'Join as Delivery', icon: '🚚', desc: 'Deliver orders' }
-            ].map(r => (
-              <button key={r.value} onClick={() => { setRole(r.value); setError(null) }}
-                className={`p-2 rounded-2xl text-center border-2 transition-all shadow-sm
-                  ${role === r.value ? 'border-primary bg-primary/5 shadow-primary/10 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                <span className="text-xl">{r.icon}</span>
+            {ROLES.map(r => (
+              <button key={r.value} onClick={() => handleRoleChange(r.value)}
+                className={`p-3 rounded-2xl text-center border-2 transition-all ${role === r.value ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <span className="text-2xl">{r.icon}</span>
                 <div className="font-semibold text-xs mt-1 text-gray-800">{r.label}</div>
                 <div className="text-xs text-muted">{r.desc}</div>
               </button>
@@ -123,146 +84,115 @@ export default function Register() {
           </div>
 
           <div className="card p-6 shadow-xl">
-            <div className="mb-5 text-center">
-              <h1 className="font-display text-2xl font-bold">{lang === 'hi' ? 'खाता बनाएं' : 'Create Account'}</h1>
-              <p className="text-sm text-muted mt-1">{lang === 'hi' ? 'प्रोग्रेसिव नारी में शामिल हों' : 'Join Progressive Naari'}</p>
-            </div>
+            <h1 className="font-display text-2xl font-bold mb-1">{lang === 'hi' ? 'खाता बनाएं' : 'Create Account'}</h1>
+            <p className="text-sm text-muted mb-5">Progressive Naari 🌸</p>
 
-            {/* Women-only seller note */}
+            {/* Seller gender */}
             {role === 'seller' && (
-              <div className="bg-pink-50 border border-pink-200 rounded-xl p-3 mb-4 text-sm">
-                <p className="font-semibold text-pink-700">🌸 {lang === 'hi' ? 'केवल महिलाओं के लिए' : 'Women Entrepreneurs Only'}</p>
-                <p className="text-pink-600 text-xs mt-1">{lang === 'hi' ? 'प्रोग्रेसिव नारी केवल महिला उद्यमियों के लिए है। पुरुष केवल ग्राहक के रूप में रजिस्टर कर सकते हैं।' : 'Progressive Naari is exclusively for women entrepreneurs. Men can register as customers only.'}</p>
+              <div className="bg-pink-50 border border-pink-200 rounded-xl p-4 mb-4">
+                <p className="text-sm font-semibold text-pink-700 mb-3">🌸 {lang === 'hi' ? 'केवल महिलाओं के लिए' : 'Women Entrepreneurs Only'}</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[{ v: 'female', l: lang === 'hi' ? '👩 महिला' : '👩 Female' }, { v: 'male', l: lang === 'hi' ? '👨 पुरुष' : '👨 Male' }, { v: 'other', l: lang === 'hi' ? '🧑 अन्य' : '🧑 Other' }].map(g => (
+                    <label key={g.v} className={`flex items-center justify-center p-2 rounded-xl border-2 cursor-pointer text-xs font-semibold transition-all ${gender === g.v ? (g.v === 'female' ? 'border-primary bg-primary/5 text-primary' : 'border-red-400 bg-red-50 text-red-600') : 'border-gray-200'}`}>
+                      <input type="radio" name="gender" value={g.v} checked={gender === g.v} onChange={() => handleGenderChange(g.v)} className="hidden" />
+                      {g.l}
+                    </label>
+                  ))}
+                </div>
+                {gender === 'female' && <p className="text-green-600 text-xs mt-2 font-semibold">✅ {lang === 'hi' ? 'विक्रेता पंजीकरण उपलब्ध' : 'Seller registration available'}</p>}
               </div>
             )}
 
-            {/* Gender blocked message */}
+            {/* Delivery vehicle info */}
+            {role === 'delivery' && (
+              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-4">
+                <p className="text-sm font-semibold text-indigo-700 mb-3">🏍️ {lang === 'hi' ? 'वाहन जानकारी' : 'Vehicle Information'}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">{lang === 'hi' ? 'वाहन प्रकार' : 'Vehicle Type'}</label>
+                    <select value={form.vehicleType} onChange={update('vehicleType')} className="input-field text-sm">
+                      <option value="">{lang === 'hi' ? 'चुनें' : 'Select'}</option>
+                      <option value="bike">🏍️ Bike</option>
+                      <option value="scooter">🛵 Scooter</option>
+                      <option value="cycle">🚴 Cycle</option>
+                      <option value="van">🚐 Van</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">{lang === 'hi' ? 'वाहन नंबर' : 'Vehicle Number'}</label>
+                    <input value={form.vehicleNumber} onChange={update('vehicleNumber')} className="input-field text-sm" placeholder="UP32 AB 1234" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">{lang === 'hi' ? 'डिलीवरी ज़ोन (शहर/पिनकोड)' : 'Delivery Zone (City/Pincode)'}</label>
+                    <input value={form.deliveryZone} onChange={update('deliveryZone')} className="input-field text-sm" placeholder={lang === 'hi' ? 'जैसे: Lucknow या 226001' : 'e.g. Lucknow or 226001'} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Blocked message */}
             {genderBlocked && (
               <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 mb-4 text-center">
                 <div className="text-3xl mb-2">🚫</div>
                 <p className="font-bold text-red-700">{lang === 'hi' ? 'विक्रेता पंजीकरण संभव नहीं' : 'Seller Registration Not Allowed'}</p>
-                <p className="text-sm text-red-600 mt-1">{lang === 'hi' ? 'यह प्लेटफॉर्म केवल महिला उद्यमियों के लिए है। आप ग्राहक के रूप में रजिस्टर कर सकते हैं।' : 'This platform is exclusively for women entrepreneurs. You can register as a Customer.'}</p>
-                <button onClick={() => { setRole('customer'); setForm(p => ({ ...p, gender: '' })); setGenderBlocked(false); setError(null) }}
-                  className="mt-3 bg-dark text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors">
-                  {lang === 'hi' ? 'ग्राहक के रूप में रजिस्टर करें' : 'Register as Customer Instead'}
+                <p className="text-sm text-red-600 mt-1">{lang === 'hi' ? 'यह प्लेटफॉर्म केवल महिला उद्यमियों के लिए है।' : 'This platform is exclusively for women entrepreneurs.'}</p>
+                <button onClick={() => handleRoleChange('customer')} className="mt-3 bg-dark text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                  {lang === 'hi' ? 'ग्राहक के रूप में रजिस्टर करें' : 'Register as Customer'}
                 </button>
               </div>
             )}
 
+            {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-4 text-sm">{error}</div>}
+
             {!genderBlocked && (
-              <>
-                {/* Google signup */}
-                <button onClick={handleGoogleClick} disabled={googleLoading}
-                  className="w-full flex items-center justify-center gap-3 py-2.5 border-2 border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all font-semibold text-sm text-gray-700 mb-4 disabled:opacity-50">
-                  {googleLoading ? '⏳' : (
-                    <svg width="18" height="18" viewBox="0 0 48 48">
-                      <path fill="#4285F4" d="M47.5 24.6c0-1.6-.1-3.1-.4-4.6H24v8.7h13.2c-.6 3-2.4 5.6-5 7.3v6h8.1c4.7-4.4 7.2-10.8 7.2-17.4z"/>
-                      <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.8-5.8l-8.1-6c-2.1 1.4-4.8 2.2-7.7 2.2-5.9 0-10.9-4-12.7-9.3H2.9v6.2C6.8 42.5 14.9 48 24 48z"/>
-                      <path fill="#FBBC05" d="M11.3 29.1c-.5-1.4-.7-2.9-.7-4.4s.2-3 .7-4.4v-6.2H2.9C1 17.8 0 20.8 0 24s1 6.2 2.9 9.3l8.4-4.2z"/>
-                      <path fill="#EA4335" d="M24 9.5c3.3 0 6.3 1.1 8.6 3.3l6.4-6.4C35.9 2.1 30.5 0 24 0 14.9 0 6.8 5.5 2.9 13.5l8.4 6.2c1.8-5.3 6.8-10.2 12.7-10.2z"/>
-                    </svg>
-                  )}
-                  {lang === 'hi' ? 'Google से जुड़ें' : 'Continue with Google'}
-                </button>
-                <div className="flex items-center gap-2 mb-4">
-                  <hr className="flex-1 border-gray-200" />
-                  <span className="text-xs text-muted">{lang === 'hi' ? 'या' : 'OR'}</span>
-                  <hr className="flex-1 border-gray-200" />
-                </div>
-
-                {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-4 text-sm">{error}</div>}
-
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  {/* Gender selection for sellers */}
-                  {role === 'seller' && (
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        {lang === 'hi' ? 'लिंग *' : 'Gender *'}
-                        <span className="text-xs text-muted ml-1">({lang === 'hi' ? 'केवल महिलाएं विक्रेता बन सकती हैं' : 'Only women can register as sellers'})</span>
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { value: 'female', label: lang === 'hi' ? '👩 महिला' : '👩 Female' },
-                          { value: 'male', label: lang === 'hi' ? '👨 पुरुष' : '👨 Male' },
-                          { value: 'other', label: lang === 'hi' ? '🧑 अन्य' : '🧑 Other' }
-                        ].map(g => (
-                          <label key={g.value}
-                            className={`flex items-center justify-center p-2 rounded-xl border-2 cursor-pointer text-sm font-semibold transition-all
-                              ${form.gender === g.value
-                                ? g.value === 'female' ? 'border-primary bg-primary/5 text-primary' : 'border-red-400 bg-red-50 text-red-600'
-                                : 'border-gray-200 hover:border-gray-300'}`}>
-                            <input type="radio" name="gender" value={g.value} checked={form.gender === g.value} onChange={update('gender')} className="hidden" />
-                            {g.label}
-                          </label>
-                        ))}
-                      </div>
-                      {form.gender === 'female' && <p className="text-green-600 text-xs mt-1">✅ {lang === 'hi' ? 'विक्रेता पंजीकरण उपलब्ध है' : 'Seller registration available'}</p>}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">{t(lang, 'full_name')} *</label>
-                      <input value={form.name} onChange={update('name')} className="input-field" placeholder={lang === 'hi' ? 'आपका पूरा नाम' : 'Your full name'} required />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">{t(lang, 'email')} *</label>
-                      <input type="email" value={form.email} onChange={update('email')} className="input-field" placeholder="your@email.com" required />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">{t(lang, 'password')} * ({lang === 'hi' ? 'कम से कम 6 अक्षर' : 'min 6 chars'})</label>
-                      <div className="relative">
-                        <input type={showPass ? 'text' : 'password'} value={form.password} onChange={update('password')} className="input-field pr-10" placeholder="••••••••" required />
-                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">{showPass ? '🙈' : '👁️'}</button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">{t(lang, 'phone')}</label>
-                      <input value={form.phone} onChange={update('phone')} className="input-field" placeholder="10-digit" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">{t(lang, 'address')}</label>
-                      <input value={form.address} onChange={update('address')} className="input-field" placeholder={lang === 'hi' ? 'शहर, राज्य' : 'City, State'} />
-                    </div>
-
-                    {/* Delivery person fields */}
-                    {role === 'delivery_person' && (
-                      <>
-                        <div className="col-span-2">
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">🚗 Vehicle Type *</label>
-                          <select value={form.vehicle} onChange={update('vehicle')} className="input-field" required>
-                            <option value="">Select your vehicle</option>
-                            <option value="bike">🏍️ Bike</option>
-                            <option value="scooter">🛵 Scooter</option>
-                            <option value="bicycle">🚲 Bicycle</option>
-                            <option value="auto">🚐 Auto Rickshaw</option>
-                            <option value="car">🚗 Car</option>
-                          </select>
-                        </div>
-                        <div className="col-span-2">
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">📍 Service Areas (comma-separated) *</label>
-                          <textarea value={form.zones} onChange={update('zones')} className="input-field resize-none" placeholder="e.g., Delhi, Noida, Gurgaon" rows="2" required />
-                          <p className="text-xs text-muted mt-1">Enter cities or areas you can deliver to</p>
-                        </div>
-                      </>
-                    )}
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">{lang === 'hi' ? 'पूरा नाम *' : 'Full Name *'}</label>
+                    <input value={form.name} onChange={update('name')} className="input-field" placeholder={lang === 'hi' ? 'आपका नाम' : 'Your name'} required />
                   </div>
-
-                  <button type="submit" disabled={loading || genderBlocked}
-                    className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-primary to-secondary transition-all disabled:opacity-50 hover:scale-[1.02] active:scale-95 shadow-md">
-                    {loading ? (lang === 'hi' ? '⏳ बन रहा है...' : '⏳ Creating...') : (lang === 'hi' ? '✅ खाता बनाएं' : '✅ Create Account')}
-                  </button>
-                </form>
-              </>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">{lang === 'hi' ? 'ईमेल *' : 'Email *'}</label>
+                    <input type="email" value={form.email} onChange={update('email')} className="input-field" placeholder="your@email.com" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">{lang === 'hi' ? 'फोन' : 'Phone'}</label>
+                    <input value={form.phone} onChange={update('phone')} className="input-field" placeholder="10-digit" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">{lang === 'hi' ? 'शहर' : 'City'}</label>
+                    <input value={form.city} onChange={update('city')} className="input-field" placeholder={lang === 'hi' ? 'आपका शहर' : 'Your city'} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">{lang === 'hi' ? 'राज्य' : 'State'}</label>
+                    <input value={form.state} onChange={update('state')} className="input-field" placeholder="UP, MH..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">{lang === 'hi' ? 'पिनकोड' : 'Pincode'}</label>
+                    <input value={form.pincode} onChange={update('pincode')} className="input-field" placeholder="226001" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">{lang === 'hi' ? 'पासवर्ड * (कम से कम 6)' : 'Password * (min 6)'}</label>
+                    <div className="relative">
+                      <input type={showPass ? 'text' : 'password'} value={form.password} onChange={update('password')} className="input-field pr-10" placeholder="••••••••" required />
+                      <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">{showPass ? '🙈' : '👁️'}</button>
+                    </div>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading}
+                  className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-primary to-secondary transition-all disabled:opacity-50 hover:scale-[1.02] active:scale-95 shadow-md">
+                  {loading ? '⏳...' : (lang === 'hi' ? '✅ खाता बनाएं' : '✅ Create Account')}
+                </button>
+              </form>
             )}
 
             <p className="text-center text-sm text-muted mt-4">
-              {t(lang, 'already_account')}{' '}
-              <Link to="/login" className="text-primary font-semibold hover:underline">{t(lang, 'login_here')}</Link>
+              {lang === 'hi' ? 'पहले से खाता है?' : 'Already have an account?'}{' '}
+              <Link to="/login" className="text-primary font-semibold hover:underline">{lang === 'hi' ? 'लॉगिन करें' : 'Login'}</Link>
             </p>
           </div>
         </div>
       </div>
     </div>
   )
-}; 
+}
